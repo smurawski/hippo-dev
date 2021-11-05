@@ -3,34 +3,78 @@
 set -e
 set -o pipefail
 
+if [ -z "$SUB" ]
+then
+  read -p "Enter the subscription to use: "  SUB
+fi
 
-read -p "Enter the subscription to use: "  SUB
-read -p "Enter the resource group for the vm: " RS
-read -p "Enter the name for the vm: " NAME
+if [ -z "$LOCATION" ]
+then
+  read -p "Enter the location for the resource group: " LOCATION
+fi
+
+if [ -z "$RS" ]
+then
+  read -p "Enter the resource group for the vm: " RS
+fi
+
+if [ -z "$VMNAME" ]
+then
+  read -p "Enter the name for the vm: " VMNAME
+fi
 
 
 az account set --subscription "$SUB"
 
-curl -L -o cloud-init.txt 'https://raw.githubusercontent.com/scotty-c/hipo-dev/main/cloud-init.yaml'
+BASEURL='https://raw.githubusercontent.com/smurawski/hippo-dev/bicep'
 
-az vm create \
-  --resource-group "$RS" \
-  --name $NAME \
-  --image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest \
-  --size  Standard_B2S \
-  --custom-data cloud-init.txt \
-  --admin-username ubuntu \
-  --ssh-key-values ~/.ssh/id_rsa.pub
- 
-az vm open-port --port 5001 --resource-group $RS --name $NAME
+if [ ! -f './cloud-init.yaml' ]
+then
+  curl -L -o cloud-init.yaml "$BASEURL/cloud-init.yaml"
+fi
 
-IP=$(az vm show -d  --resource-group $RS --name $NAME --query publicIps -o tsv
+if [ ! -f './main.bicep' ]
+then
+  curl -L -o main.bicep "$BASEURL/main.bicep"
+fi
+if [ ! -f './vm.bicep' ]
+then
+  curl -L -o vm.bicep "$BASEURL/vm.bicep"
+fi
+
+if [ ! -f './id_rsa.pub' ]
+then
+  cp ~/.ssh/id_rsa.pub .
+fi
+
+VMDNSNAME=$(az deployment sub create --name "$RS_$VMNAME" --location $LOCATION --template-file ./main.bicep -o tsv --query 'properties.outputs.fqdn.value' --parameters rgName=$RS vmName=$VMNAME location=$LOCATION)
+
+SOURCEIPADDRESS=$(curl 'ifconfig.me/ip')
+INITIATEBODY=$(cat << EOF
+{
+    "virtualMachines": [
+        {
+            "id": "/subscriptions/$SUB/resourceGroups/$RS/providers/Microsoft.Compute/virtualMachines/$VMNAME",
+            "ports": [
+                {
+                    "number": 22,
+                    "protocol": "*",
+                    "allowedSourceAddressPrefix": "$SOURCEIPADDRESS",
+                    "duration": "PT3H"
+                }
+            ]
+        }
+    ]
+}
+EOF
 )
 
-echo "Access your vm with  ssh ubuntu@$IP"
+az rest --method POST --url "https://management.azure.com/subscriptions/$SUB/resourceGroups/$RS/providers/Microsoft.Security/locations/$LOCATION/jitNetworkAccessPolicies/default/initiate?api-version=2015-06-01-preview" --headers "Content-Type=application/json" --body "$INITIATEBODY"
+
+echo "Access your vm with  ssh ubuntu@$VMDNSNAME"
 echo ""
-echo "To access the Hippo dashboard https://$IP:5001"
+echo "To access the Hippo dashboard https://$VMDNSNAME:5001"
+echo ""
+echo "To access the Bindle API https://$VMDNSNAME:8080/v1"
 echo ""
 echo "Please note the dashboard will take a few minutes as we are building it from source"
-
-rm cloud-init.txt
