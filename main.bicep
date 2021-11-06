@@ -1,8 +1,8 @@
 targetScope = 'subscription'
 
-param location string = 'eastus'
-param rgName string = 'hippodevdeploy'
-param vmName string = 'hippodeploy'
+param location string 
+param rgName string 
+param vmName string 
 param vmDnsName string = vmName
 
 var publicSSHKey = loadTextContent('./id_rsa.pub')

@@ -209,24 +209,25 @@ resource vm 'Microsoft.Compute/virtualMachines@2016-04-30-preview' = {
   ]
 }
 
-// resource jit 'Microsoft.Security/locations/jitNetworkAccessPolicies@2015-06-01-preview' = {
-//   name: 'eastus/default'
-//   properties: {
-//     virtualMachines: [
-//         {
-//           id: vm.id
-//           ports: [
-//               {
-//                   number: 22
-//                   protocol: '*'
-//                   allowedSourceAddressPrefix: '*'
-//                   allowedSourceAddressPrefixes: null
-//                   maxRequestAccessDuration: 'PT3H'
-//               }
-//           ]
-//       }
-//     ]
-//   }
-// }
+resource jit 'Microsoft.Security/locations/jitNetworkAccessPolicies@2015-06-01-preview' = {
+  name: '${location}/default'
+  kind: 'Basic'
+  properties: {
+    virtualMachines: [
+        {
+          id: vm.id
+          ports: [
+              {
+                  number: 22
+                  protocol: '*'
+                  allowedSourceAddressPrefix: '*'
+                  allowedSourceAddressPrefixes: null
+                  maxRequestAccessDuration: 'PT3H'
+              }
+          ]
+      }
+    ]
+  }
+}
 
 output fqdn string = publicIPAddressName.properties.dnsSettings.fqdn
