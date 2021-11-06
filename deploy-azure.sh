@@ -3,22 +3,22 @@
 set -e
 set -o pipefail
 
-if [ ! -v SUB]
+if [ -z "$SUB" ]
 then
   read -p "Enter the subscription to use: "  SUB
 fi
 
-if [ ! -v LOCATION]
+if [ -z "$LOCATION" ]
 then
   read -p "Enter the location for the resource group: " LOCATION
 fi
 
-if [ ! -v RS]
+if [ -z "$RS" ]
 then
   read -p "Enter the resource group for the vm: " RS
 fi
 
-if [ ! -v VMNAME]
+if [ -z "$VMNAME" ]
 then
   read -p "Enter the name for the vm: " VMNAME
 fi
@@ -26,9 +26,50 @@ fi
 
 az account set --subscription "$SUB"
 
-curl -L -o cloud-init.txt 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
+BASEURL='https://raw.githubusercontent.com/smurawski/hippo-dev/bicep'
 
-$VMDNSNAME = az deployment sub create --location eastus --template-file ./main.bicep -o tsv --query 'properties.outputs.fqdn.value' --parameters rgName=$RS vmName=$VMNAME location=$LOCATION
+if [ ! -f './cloud-init.yaml' ]
+then
+  curl -L -o cloud-init.yaml "$BASEURL/cloud-init.yaml"
+fi
+
+if [ ! -f './main.bicep' ]
+then
+  curl -L -o main.bicep "$BASEURL/main.bicep"
+fi
+if [ ! -f './vm.bicep' ]
+then
+  curl -L -o vm.bicep "$BASEURL/vm.bicep"
+fi
+
+if [ ! -f './id_rsa.pub' ]
+then
+  cp ~/.ssh/id_rsa.pub .
+fi
+
+VMDNSNAME=$(az deployment sub create --name "$RS_$VMNAME" --location $LOCATION --template-file ./main.bicep -o tsv --query 'properties.outputs.fqdn.value' --parameters rgName=$RS vmName=$VMNAME location=$LOCATION)
+
+SOURCEIPADDRESS=$(curl 'ifconfig.me/ip')
+INITIATEBODY=$(cat << EOF
+{
+    "virtualMachines": [
+        {
+            "id": "/subscriptions/$SUB/resourceGroups/$RS/providers/Microsoft.Compute/virtualMachines/$VMNAME",
+            "ports": [
+                {
+                    "number": 22,
+                    "protocol": "*",
+                    "allowedSourceAddressPrefix": "$SOURCEIPADDRESS",
+                    "duration": "PT3H"
+                }
+            ]
+        }
+    ]
+}
+EOF
+)
+
+az rest --method POST --url "https://management.azure.com/subscriptions/$SUB/resourceGroups/$RS/providers/Microsoft.Security/locations/$LOCATION/jitNetworkAccessPolicies/default/initiate?api-version=2015-06-01-preview" --headers "Content-Type=application/json" --body "$INITIATEBODY"
 
 echo "Access your vm with  ssh ubuntu@$VMDNSNAME"
 echo ""

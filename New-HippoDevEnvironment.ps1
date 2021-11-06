@@ -30,7 +30,7 @@ begin {
     else {
         throw "Please put a public ssh key in the current directory."
     }
-    curl -L -o cloud-init.txt 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
+    curl -L -o cloud-init.yaml 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
 
     $OldPath = $env:Path
     if (get-command bicep -ErrorAction SilentlyContinue)  {
