@@ -103,5 +103,6 @@ process {
     Write-Host "Please note the dashboard will take a few minutes as we are building it from source"
 }
 end {
+    remove-item .\cloud-init.txt
     $env:Path = $OldPath
 }
