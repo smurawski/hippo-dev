@@ -80,11 +80,14 @@ sudo tar -C /usr/local/bin/ -xzf hippo-v0.9.0-linux-amd64.tar.gz
 
 echo "# hippo..."
 git clone https://github.com/deislabs/hippo.git
-cd hippo
+pushd hippo
 dotnet restore
+pushd src/Hippo
 npm run build
+popd
 dotnet build
-cp -r wwwroot /home/ubuntu/hippo/bin/Debug/net6.0/
+popd
+cp -r /home/ubuntu/hippo/src/Hippo/wwwroot /home/ubuntu/hippo/src/Hippo/bin/Debug/net6.0/
 
 
 echo "# hippo daemon file..."
@@ -97,8 +100,8 @@ RestartSec=5s
 Environment=BINDLE_URL=http://localhost:8080/v1
 Environment=ASPNETCORE_ENVIRONMENT=Development
 Environment=HOME=/home/ubuntu
-WorkingDirectory=/home/ubuntu/hippo/bin/Debug/net5.0/
-ExecStart=/home/ubuntu/hippo/bin/Debug/net5.0/hippo-server
+WorkingDirectory=/home/ubuntu/hippo/src/Hippo/bin/Debug/net6.0/
+ExecStart=/home/ubuntu/hippo/src/Hippo/bin/Debug/net6.0/hippo-server
 User=root
 Group=root
 [Install]

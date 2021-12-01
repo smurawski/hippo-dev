@@ -14,12 +14,10 @@ param vmSize string = 'Standard_D2_v3'
 
 @description('The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version. Allowed values: 14.04-LTS,16.04-LTS,18.04-LTS,20.04-LTS.')
 @allowed([
-  '14.04-LTS'
-  '16.04-LTS'
-  '18.04-LTS'
-  '20.04-LTS'
+  '20_04-lts'
+  '20_04-lts-gen2'
 ])
-param ubuntuOSVersion string = '20.04-LTS'
+param ubuntuOSVersion string = '20_04-lts'
 
 @description('Location for all resources.')
 param location string
@@ -37,7 +35,7 @@ param adminPasswordOrKey string
 
 var storageAccountName_var = '${uniqueString(resourceGroup().id)}sacustmdata'
 var imagePublisher = 'Canonical'
-var imageOffer = 'UbuntuServer'
+var imageOffer = '0001-com-ubuntu-server-focal'
 var nicName_var = 'networkInterface1'
 var virtualNetworkName_var = 'virtualNetwork1'
 var publicIPAddressName_var = 'publicIp1'

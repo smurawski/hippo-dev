@@ -114,7 +114,7 @@ process {
     Write-Host "  `$env:USER = 'admin'"
     Write-Host "  `$env:HIPPO_USERNAME ='admin'"
     Write-Host "  `$env:HIPPO_PASSWORD = 'Passw0rd!'"
-    Write-Host "  `$env:HIPPO_URL = 'https://${VMDNSNAME}:500'"
+    Write-Host "  `$env:HIPPO_URL = 'https://${VMDNSNAME}:5001'"
     Write-Host "  `$env:BINDLE_URL = 'http://${VMDNSNAME}:8080/v1'"
     Write-Host "  `$env:GLOBAL_AGENT_FORCE_GLOBAL_AGENT = 'false'"
     Write-Host "  yo wasm"
