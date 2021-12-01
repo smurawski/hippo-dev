@@ -50,7 +50,7 @@ Description=Bindle server
 [Service]
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/local/bin/bindle-server --unauthenticated
+ExecStart=/usr/local/bin/bindle-server --unauthenticated --address 0.0.0.0:8080
 User=ubuntu
 Group=ubuntu
 [Install]
