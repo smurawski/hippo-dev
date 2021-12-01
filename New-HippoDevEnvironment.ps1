@@ -12,7 +12,7 @@ param (
     $VMName,
     [Parameter(ValueFromPipelineByPropertyName)]
     [string] 
-    $Location = 'westus',
+    $Location = 'westus2',
     [string]
     $SourceIpAddress = (invoke-restmethod https://ifconfig.me/all.json -headers @{'Content-Type' = 'application/json'}).ip_addr,
     [switch]
@@ -21,18 +21,19 @@ param (
 
 begin {
     if ($Force) {
-        Write-Verbose "Removing the"
+        Write-Verbose "Removing any previous resource group."
         Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue | Remove-AzResourceGroup -Force
     }
     if ((-not (test-path ./id_rsa.pub)) -and (test-path ~/.ssh/id_rsa.pub) ) {
         copy-item ~/.ssh/id_rsa.pub
     }
-    else {
-        throw "Please put a public ssh key in the current directory."
+
+    if ((-not (Test-Path .\cloud-init.yaml)) -or ($Force)) {
+        curl -L -o cloud-init.yaml 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
     }
-    curl -L -o cloud-init.yaml 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
 
     $OldPath = $env:Path
+
     if (get-command bicep -ErrorAction SilentlyContinue)  {
         Write-Verbose "Found the Bicep CLI.  Proceeding..."
     }
@@ -57,8 +58,15 @@ process {
     }
     
     $DeploymentName = $ResourceGroupName + $VMName 
-    $Deployment = New-AzSubscriptionDeployment -Name $DeploymentName -Location $Location -TemplateFile './main.bicep' -TemplateParameterObject $Parameters -ErrorAction Stop
-    $VMDNSNAME = $Deployment.Outputs['fqdn'].Value
+    try {
+        $Deployment = New-AzSubscriptionDeployment -Name $DeploymentName -Location $Location -TemplateFile './main.bicep' -TemplateParameterObject $Parameters -ErrorAction Stop
+        $VMDNSNAME = $Deployment.Outputs['fqdn'].Value
+    }
+    catch {
+        $env:Path = $OldPath
+        remove-item ./id_rsa.pub
+        throw $_
+    }
 
     $JitRequestBody = @"
 {
@@ -101,7 +109,17 @@ process {
     Write-Host "To access the Bindle API https://${VMDNSNAME}:8080/v1"
     Write-Host ""
     Write-Host "Please note the dashboard will take a few minutes as we are building it from source"
+
+    Write-Host "You can start a new WASM project with:"
+    Write-Host "  `$env:USER = 'admin'"
+    Write-Host "  `$env:HIPPO_USERNAME ='admin'"
+    Write-Host "  `$env:HIPPO_PASSWORD = 'Passw0rd!'"
+    Write-Host "  `$env:HIPPO_URL = 'https://${VMDNSNAME}:500'"
+    Write-Host "  `$env:BINDLE_URL = 'http://${VMDNSNAME}:8080/v1'"
+    Write-Host "  `$env:GLOBAL_AGENT_FORCE_GLOBAL_AGENT = 'false'"
+    Write-Host "  yo wasm"
 }
 end {
     $env:Path = $OldPath
+    remove-item ./id_rsa.pub
 }

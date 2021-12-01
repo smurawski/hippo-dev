@@ -7,6 +7,7 @@ echo "# make..."
 sudo apt update 
 sudo apt install -y \
          git \
+         build-essential \
          pkg-config
 
 echo "# nodejs"
@@ -22,15 +23,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source $HOME/.cargo/env
 rustup target add wasm32-wasi
 
-echo "# dotnet5..."
+echo "# dotnet6..."
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 rm packages-microsoft-prod.deb
 sudo apt-get update; \
   sudo apt-get install -y apt-transport-https && \
   sudo apt-get update && \
-  sudo apt-get install -y aspnetcore-runtime-5.0 \
-                          dotnet-sdk-5.0 
+  sudo apt-get install -y dotnet-sdk-6.0
 
 echo "# wagi..."
 VERSION=v0.4.0
@@ -80,11 +80,11 @@ sudo tar -C /usr/local/bin/ -xzf hippo-v0.9.0-linux-amd64.tar.gz
 
 echo "# hippo..."
 git clone https://github.com/deislabs/hippo.git
-cd hippo/Hippo
+cd hippo
 dotnet restore
 npm run build
 dotnet build
-cp -r wwwroot /home/ubuntu/hippo/Hippo/bin/Debug/net5.0/
+cp -r wwwroot /home/ubuntu/hippo/bin/Debug/net6.0/
 
 
 echo "# hippo daemon file..."
@@ -97,8 +97,8 @@ RestartSec=5s
 Environment=BINDLE_URL=http://localhost:8080/v1
 Environment=ASPNETCORE_ENVIRONMENT=Development
 Environment=HOME=/home/ubuntu
-WorkingDirectory=/home/ubuntu/hippo/Hippo/bin/Debug/net5.0/
-ExecStart=/home/ubuntu/hippo/Hippo/bin/Debug/net5.0/hippo-server
+WorkingDirectory=/home/ubuntu/hippo/bin/Debug/net5.0/
+ExecStart=/home/ubuntu/hippo/bin/Debug/net5.0/hippo-server
 User=root
 Group=root
 [Install]

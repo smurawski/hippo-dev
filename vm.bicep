@@ -19,7 +19,7 @@ param vmSize string = 'Standard_D2_v3'
   '18.04-LTS'
   '20.04-LTS'
 ])
-param ubuntuOSVersion string = '18.04-LTS'
+param ubuntuOSVersion string = '20.04-LTS'
 
 @description('Location for all resources.')
 param location string
