@@ -20,7 +20,7 @@ param (
     [string]
     $GitHubProjectName = 'hippo-dev',
     [string]
-    $GitHubProjectBranch = 'main',
+    $GitHubProjectBranch = 'with_old_build',
     [switch]
     $Force
 )
