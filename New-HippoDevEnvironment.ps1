@@ -15,6 +15,12 @@ param (
     $Location = 'westus2',
     [string]
     $SourceIpAddress = (invoke-restmethod https://ifconfig.me/all.json -headers @{'Content-Type' = 'application/json'}).ip_addr,
+    [string]
+    $GitHubProjectOrg = 'smurawski',
+    [string]
+    $GitHubProjectName = 'hippo-dev',
+    [string]
+    $GitHubProjectBranch = 'main',
     [switch]
     $Force
 )
@@ -28,9 +34,11 @@ begin {
         copy-item ~/.ssh/id_rsa.pub
     }
 
-    if ((-not (Test-Path .\cloud-init.yaml)) -or ($Force)) {
-        curl -L -o cloud-init.yaml 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
-    }
+    foreach ($file in ('cloud-init.yaml', 'vm.bicep', 'main.bicep')) {
+        if ((-not (Test-Path $file)) -or ($Force)) {
+            Invoke-RestMethod -OutFile $file -Uri "https://raw.githubusercontent.com/$GitHubProjectOrg/$GitHubProjectName/$GitHubProjectBranch/$file"
+        }
+    }    
 
     $OldPath = $env:Path
 

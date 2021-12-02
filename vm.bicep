@@ -7,7 +7,7 @@ param dnsLabelPrefix string
 param adminUsername string
 
 @description('String passed down to the Virtual Machine.')
-param customData string = loadTextContent('./cloud-init.yaml')
+param customData string 
 
 @description('VM size')
 param vmSize string = 'Standard_D2_v3'

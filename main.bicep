@@ -4,6 +4,7 @@ param location string
 param rgName string 
 param vmName string 
 param vmDnsName string = vmName
+param customData string = loadTextContent('./cloud-init.yaml')
 
 var publicSSHKey = loadTextContent('./id_rsa.pub')
 
@@ -22,6 +23,7 @@ module vm './vm.bicep' = {
     adminUsername: 'ubuntu'
     dnsLabelPrefix: vmDnsName
     adminPasswordOrKey: publicSSHKey
+    customData: customData
   }
 }
 
