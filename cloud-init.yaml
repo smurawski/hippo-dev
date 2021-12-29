@@ -5,5 +5,5 @@ runcmd:
 - export HOME='/home/ubuntu'
 - export USER='ubuntu'
 - cd $HOME
-- curl -L -o cloud-init.sh 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.sh'
+- curl -L -o cloud-init.sh 'https://raw.githubusercontent.com/smurawski/hippo-dev/bicep/cloud-init.sh'
 - bash cloud-init.sh | tee output.txt

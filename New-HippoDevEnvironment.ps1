@@ -16,7 +16,13 @@ param (
     [string]
     $SourceIpAddress = (invoke-restmethod https://ifconfig.me/all.json -headers @{'Content-Type' = 'application/json'}).ip_addr,
     [switch]
-    $Force
+    $Force,
+    [string]
+    $ConfigurationRepository = 'smurawski/hippo-dev',
+    [string]
+    $ConfigurationBranch = 'bicep',
+    [string]
+    $PublicKeyPath = './id_rsa.pub'
 )
 
 begin {
@@ -24,19 +30,31 @@ begin {
         Write-Verbose "Removing the"
         Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue | Remove-AzResourceGroup -Force
     }
-    if ((-not (test-path ./id_rsa.pub)) -and (test-path ~/.ssh/id_rsa.pub) ) {
-        copy-item ~/.ssh/id_rsa.pub
+    if ((-not (test-path ./id_rsa.pub)) -and (test-path $PublicKeyPath) ) {
+        copy-item $PublicKeyPath -Destination .
+    }
+    elseif ((-not (test-path ./id_rsa.pub)) -and (test-path ~/.ssh/id_rsa.pub) ) {
+        copy-item ~/.ssh/id_rsa.pub -Destination .
     }
     else {
-        throw "Please put a public ssh key in the current directory."
+        throw "Please put a public ssh key (id_rsa.pub) in the current directory or pass the desired public key with the PubicKeyPath parameter."
     }
-    curl -L -o cloud-init.yaml 'https://raw.githubusercontent.com/smurawski/hippo-dev/main/cloud-init.yaml'
+
+    $RepositoryRawUrl = "https://raw.githubusercontent.com/$ConfigurationRepository/$ConfigurationBranch"
+    foreach ($path in ('cloud-init.yaml', 'main.bicep', 'vm.bicep')) {
+        Write-Verbose "Checking for $path."
+        if (-not (Test-Path $path)) {
+            Write-Verbose "Getting $path from GitHub - $ConfigurationRepository on branch $ConfigurationBranch."
+            curl -L -o $path "$RepositoryRawUrl/$path"
+        }
+    }
 
     $OldPath = $env:Path
     if (get-command bicep -ErrorAction SilentlyContinue)  {
         Write-Verbose "Found the Bicep CLI.  Proceeding..."
     }
     elseif (get-command az -ErrorAction SilentlyContinue){
+        Write-Verbose "Installing the Bicep CLI."
         az bicep install | out-null
         $BicepPath = (Resolve-Path '~/.azure/bin').ProviderPath
         $env:Path += [System.IO.Path]::PathSeparator + $BicepPath + [System.IO.Path]::PathSeparator
@@ -89,9 +107,9 @@ process {
         Payload = $JitRequestBody
     }
 
-    $Result = Invoke-AzRestMethod @InitiateParameters |
-                            Select-Object -ExpandProperty Content |
-                            ConvertFrom-Json -Depth 100
+    Invoke-AzRestMethod @InitiateParameters |
+        Select-Object -ExpandProperty Content |
+        ConvertFrom-Json -Depth 100
 
 
     Write-Host "Access your vm with  ssh ubuntu@$VMDNSNAME"

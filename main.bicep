@@ -6,6 +6,7 @@ param vmName string
 param vmDnsName string = vmName
 
 var publicSSHKey = loadTextContent('./id_rsa.pub')
+var customData = loadTextContent('./cloud-init.yaml')
 
 
 resource rg 'Microsoft.Resources/resourceGroups@2020-06-01' = {
@@ -22,6 +23,7 @@ module vm './vm.bicep' = {
     adminUsername: 'ubuntu'
     dnsLabelPrefix: vmDnsName
     adminPasswordOrKey: publicSSHKey
+    customData: customData
   }
 }
 
