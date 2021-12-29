@@ -12,7 +12,7 @@ param (
     $VMName,
     [Parameter(ValueFromPipelineByPropertyName)]
     [string] 
-    $Location = 'westus',
+    $Location = 'westus2',
     [string]
     $SourceIpAddress = (invoke-restmethod https://ifconfig.me/all.json -headers @{'Content-Type' = 'application/json'}).ip_addr,
     [switch]
@@ -27,19 +27,28 @@ param (
 
 begin {
     if ($Force) {
-        Write-Verbose "Removing the"
+        Write-Verbose "Removing the existing resource group."
         Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue | Remove-AzResourceGroup -Force
     }
-    if ((-not (test-path ./id_rsa.pub)) -and (test-path $PublicKeyPath) ) {
-        copy-item $PublicKeyPath -Destination .
-    }
-    elseif ((-not (test-path ./id_rsa.pub)) -and (test-path ~/.ssh/id_rsa.pub) ) {
-        copy-item ~/.ssh/id_rsa.pub -Destination .
+
+    if (-not (test-path ./id_rsa.pub)) {
+        Write-Verbose "Did not find ./id_rsa.pub in the local directory."
+        if (test-path $PublicKeyPath)  {
+            Write-Verbose "Copying $PublicKeyPath to ./id.rsa.pub"
+            copy-item $PublicKeyPath -Destination .
+        }
+        elseif (test-path ~/.ssh/id_rsa.pub) {
+            Write-Verbose "Copying ~/.ssh/id_rsa.pub to ./id.rsa.pub"
+            copy-item ~/.ssh/id_rsa.pub -Destination ./id_rsa.pub
+        }
+        else {
+            throw "Please put a public ssh key (id_rsa.pub) in the current directory or pass the desired public key with the PubicKeyPath parameter."
+        } 
     }
     else {
-        throw "Please put a public ssh key (id_rsa.pub) in the current directory or pass the desired public key with the PubicKeyPath parameter."
+        Write-Verbose "Using ./id_rsa.pub in the current directory."
     }
-
+   
     $RepositoryRawUrl = "https://raw.githubusercontent.com/$ConfigurationRepository/$ConfigurationBranch"
     foreach ($path in ('cloud-init.yaml', 'main.bicep', 'vm.bicep')) {
         Write-Verbose "Checking for $path."
@@ -121,6 +130,5 @@ process {
     Write-Host "Please note the dashboard will take a few minutes as we are building it from source"
 }
 end {
-    remove-item .\cloud-init.txt
     $env:Path = $OldPath
 }
