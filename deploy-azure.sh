@@ -26,7 +26,7 @@ fi
 
 az account set --subscription "$SUB"
 
-BASEURL='https://raw.githubusercontent.com/smurawski/hippo-dev/bicep'
+BASEURL='https://raw.githubusercontent.com/smurawski/hippo-dev/net_6'
 
 if [ ! -f './cloud-init.yaml' ]
 then

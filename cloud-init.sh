@@ -7,6 +7,7 @@ echo "# make..."
 sudo apt update 
 sudo apt install -y \
          git \
+         build-essential \
          pkg-config
 
 echo "# nodejs"
@@ -22,15 +23,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source $HOME/.cargo/env
 rustup target add wasm32-wasi
 
-echo "# dotnet5..."
-wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-rm packages-microsoft-prod.deb
-sudo apt-get update; \
-  sudo apt-get install -y apt-transport-https && \
-  sudo apt-get update && \
-  sudo apt-get install -y aspnetcore-runtime-5.0 \
-                          dotnet-sdk-5.0 
+echo "# dotnet6..."
+curl -o- https://dot.net/v1/dotnet-install.sh | bash
 
 echo "# wagi..."
 VERSION=v0.4.0
@@ -80,50 +74,49 @@ sudo tar -C /usr/local/bin/ -xzf hippo-v0.9.0-linux-amd64.tar.gz
 
 echo "# hippo..."
 git clone https://github.com/deislabs/hippo.git
-cd hippo/Hippo
-dotnet restore
-npm run build
-dotnet build
-cp -r wwwroot /home/ubuntu/hippo/Hippo/bin/Debug/net5.0/
 
 
-echo "# hippo daemon file..."
-sudo tee -a /etc/systemd/system/hippo.service <<'EOF'
-[Unit]
-Description=Hippo server
-[Service]
-Restart=on-failure
-RestartSec=5s
-Environment=BINDLE_URL=http://localhost:8080/v1
-Environment=ASPNETCORE_ENVIRONMENT=Development
-Environment=HOME=/home/ubuntu
-WorkingDirectory=/home/ubuntu/hippo/Hippo/bin/Debug/net5.0/
-ExecStart=/home/ubuntu/hippo/Hippo/bin/Debug/net5.0/hippo-server
-User=root
-Group=root
-[Install]
-WantedBy=multi-user.target
-EOF
 
-sudo chmod +x /etc/systemd/system/hippo.service
+# echo "# hippo daemon file..."
+# sudo tee -a /etc/systemd/system/hippo.service <<'EOF'
+# [Unit]
+# Description=Hippo server
+# [Service]
+# Restart=on-failure
+# RestartSec=5s
+# Environment=BINDLE_URL=http://localhost:8080/v1
+# Environment=ASPNETCORE_ENVIRONMENT=Development
+# Environment=HOME=/home/ubuntu
+# WorkingDirectory=/home/ubuntu/hippo/Hippo/bin/Debug/net5.0/
+# ExecStart=/home/ubuntu/hippo/Hippo/bin/Debug/net5.0/hippo-server
+# User=root
+# Group=root
+# [Install]
+# WantedBy=multi-user.target
+# EOF
 
-echo "# starting hippo ..."
-sudo systemctl enable hippo
-sudo systemctl start hippo
+# sudo chmod +x /etc/systemd/system/hippo.service
+
+# echo "# starting hippo ..."
+# sudo systemctl enable hippo
+# sudo systemctl start hippo
 
 echo "# waiting for hippo to start ..."            
 sleep 5 # wait for hippo to start
 
 sudo chown -R ubuntu:ubuntu /home/ubuntu
 
+echo "create .env file for easy reuse."
+echo "export USER=admin" > .env
+echo "export HIPPO_USERNAME=admin" >> .env
+echo "export HIPPO_PASSWORD='Passw0rd!'" >> .env
+echo "export HIPPO_URL=https://localhost:5001" >> .env
+echo "export BINDLE_URL=http://localhost:8080/v1" >> .env
+echo "export GLOBAL_AGENT_FORCE_GLOBAL_AGENT=false" >> .env
+
 echo "# complete!"
 echo "You can access hippo at https://localhost:5001"
 echo "You can start a new WASM project with:"
-echo "  export USER=admin"
-echo "  export HIPPO_USERNAME=admin"
-echo "  export HIPPO_PASSWORD='Passw0rd!'"
-echo "  export HIPPO_URL=https://localhost:5001"
-echo "  export BINDLE_URL=http://localhost:8080/v1"
-echo "  export GLOBAL_AGENT_FORCE_GLOBAL_AGENT=false"
+echo "  source .env"
 echo "  yo wasm"
 echo "and follow the prompts"

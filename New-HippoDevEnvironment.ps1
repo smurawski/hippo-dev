@@ -20,7 +20,7 @@ param (
     [string]
     $ConfigurationRepository = 'smurawski/hippo-dev',
     [string]
-    $ConfigurationBranch = 'bicep',
+    $ConfigurationBranch = 'net_6',
     [string]
     $PublicKeyPath = './id_rsa.pub'
 )
